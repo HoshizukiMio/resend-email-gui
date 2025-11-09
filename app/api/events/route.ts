@@ -18,20 +18,28 @@ const emails: any[] = [];
 export const POST = async (request: NextRequest) => {
   try {
     const payload = await request.text();
-    const headers = {
-      'svix-id': request.headers.get('svix-id')!,
-      'svix-timestamp': request.headers.get('svix-timestamp')!,
-      'svix-signature': request.headers.get('svix-signature')!,
-    };
+    const svix_id = request.headers.get('svix-id');
+    const svix_timestamp = request.headers.get('svix-timestamp');
+    const svix_signature = request.headers.get('svix-signature');
+
+    if (!svix_id || !svix_timestamp || !svix_signature) {
+      return new NextResponse('Missing svix headers', { status: 400 });
+    }
 
     if (!webhookSecret) {
       console.error('RESEND_WEBHOOK_SECRET is not set');
       return new NextResponse('Webhook secret is not set', { status: 500 });
     }
 
+    const headers = {
+      id: svix_id,
+      timestamp: svix_timestamp,
+      signature: svix_signature,
+    };
+
     const event = resend.webhooks.verify({
       payload,
-      headers: headers as any,
+      headers,
       webhookSecret,
     }) as WebhookEvent;
 
